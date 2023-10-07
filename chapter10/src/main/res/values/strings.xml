@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Raceing</string>
+    <string name="RGBvalue_zh_cn">RGB通道值</string>
+    <string name="RGBvalue">(0,0,0)</string>
+    <string name="开关RGB灯带">开关</string>
+</resources>
