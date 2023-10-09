@@ -1,8 +1,7 @@
 # BRICS-FS-16 2023金砖物联网
 
 ***
-1. chapter1 ~ 10 为word文档内顺序
-2. 题目里安卓app的包名
+   
    - chapter01
      pass
    - chapter02
@@ -11,10 +10,12 @@
      pass
    - chapter04
      商品查询系统
+     >中距离一体机实现商品信息的查询
    - chapter05
      pass
    - chapter06
      环境监测系统
+     >采集无线传感网的ZigBee温湿度、二氧化碳、ZigBee光照数据
    - chapter07
      pass
    - chapter08
