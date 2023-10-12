@@ -82,6 +82,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+/**
+ *
+ * @param stoke
+ * @return
+ * @author YuHao
+ * @create 2023/10/12 20:44
+ **/
     private void RenameDB(String stoke) {
         DBOpenHelper dbOpenHelper = new DBOpenHelper(MainActivity.this, ROOM_NAME, null, 1);
         SQLiteDatabase db = dbOpenHelper.getWritableDatabase();
