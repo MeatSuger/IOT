@@ -15,7 +15,7 @@
         android:theme="@style/Theme.IOT">
         <activity
             android:name=".SettingsActivity"
-            android:exported="true"
+            android:exported="false"
             android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
             android:parentActivityName=".MainActivity" />
         <meta-data

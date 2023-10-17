@@ -6,8 +6,9 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
-import android.app.ProgressDialog;
+import android.app.AlertDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -25,6 +26,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
@@ -53,14 +56,23 @@ public class SettingsActivity
     private SQLiteDatabase writableDatabase;
     private SharedPreferences shared;
     private SharedPreferences.Editor editor;
+    private OkHttpClient client;
+    private String InfoList[] = {"ed_cloud_IP", "ed_cloud_com", "ed_cloud_user", "ed_cloud_pwd", "ed_proj_ID", "ed_NET_ID", "ed_temp_api", "ed_hum_api", "ed_hum_api", "ed_light_api", "ed_human_api"};
+    //private EditText EditTextList[] = {ed_cloud_IP,ed_cloud_com,ed_cloud_user,ed_cloud_pwd,ed_proj_ID,ed_NET_ID,ed_temp_api,ed_hum_api,ed_hum_api,ed_light_api,ed_human_api};
+    List<EditText> EditTextList = new ArrayList<EditText>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.settings_activity);
+
+
+        client = new OkHttpClient();
         dbHelper = new DBHelper(SettingsActivity.this, ROOM_NAME, null, 1);
         shared = getSharedPreferences("share", MODE_PRIVATE);
         editor = shared.edit();
+
+
         ActionBar actionBar = this.getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
@@ -68,6 +80,7 @@ public class SettingsActivity
             actionBar.setTitle("设置");
         }
         findViewByIDme();
+        putlist();
         setOnClickListenerByMe();
 
 
@@ -86,37 +99,53 @@ public class SettingsActivity
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.btn_save) {
-            editor.putString("ed_cloud_IP",  ed_cloud_IP.getText().toString());
-            editor.putString("ed_cloud_com", ed_cloud_com.getText().toString());
-            editor.putString("ed_cloud_user" ,ed_cloud_user.getText().toString());
-            editor.putString("ed_cloud_pwd", ed_cloud_pwd.getText().toString());
-            editor.putString("ed_proj_ID",   ed_proj_ID.getText().toString());
-            editor.putString("ed_NET_ID",    ed_NET_ID.getText().toString());
-            editor.putString("ed_temp_api",  ed_temp_api.getText().toString());
-            editor.putString("ed_hum_api",   ed_hum_api.getText().toString());
-            editor.putString("ed_light_api", ed_light_api.getText().toString());
-            editor.putString("ed_human_api", ed_human_api.getText().toString());
+            for (int i = 0; (i < InfoList.length - 1); i++) {
+                editor.putString(InfoList[i], EditTextList.get(i).getText().toString());
+                Log.d(TAG, "onClick: getValue" + EditTextList.get(i).getText().toString());
+            }
             editor.commit();
             String s = shared.getString("ed_cloud_IP", "");
             Log.d(TAG, "onClick: test SharedPreferences" + s);
             //连接云平台的后续操作，若未连接，则显示未连接
+            runOnUiThread(new Runnable() {
 
-            ProgressDialog loginMission = new ProgressDialog(this);
-            loginMission.setMessage("登录中");
-            loginMission.show();
-            login();
-            while (true) {
-                if (shared.getBoolean("token_state", false)) {
-                    loginMission.closeOptionsMenu();
-                    break;
-                } else {
-                    Toast.makeText(SettingsActivity.this, "登录失败，请检查密码或用户名是否正确", Toast.LENGTH_SHORT).show();
+                private AlertDialog dialog;
+
+                @Override
+                public void run() {
+                    //创建对话框
+                    dialog = new AlertDialog.Builder(SettingsActivity.this).create();
+                    dialog.setIcon(R.mipmap.ic_launcher);//设置对话框icon
+                    dialog.setTitle("这是一个AlertDialog");//设置对话框标题
+                    dialog.setMessage("Hello world");//设置文字显示内容
+                    dialog.show();//显示对话框
                 }
-                break;
+            });
+
+            login();
+            if (shared.getBoolean("token_state", false)) {
+                Toast.makeText(SettingsActivity.this,"Success",Toast.LENGTH_SHORT).show();
+
+            } else {
+                Toast.makeText(SettingsActivity.this, "登录失败，请检查密码或用户名是否正确", Toast.LENGTH_SHORT).show();
+                login();
             }
         }
 
 
+    }
+
+    private void putlist() {
+        EditTextList.add(ed_cloud_IP);
+        EditTextList.add(ed_cloud_com);
+        EditTextList.add(ed_cloud_user);
+        EditTextList.add(ed_cloud_pwd);
+        EditTextList.add(ed_proj_ID);
+        EditTextList.add(ed_NET_ID);
+        EditTextList.add(ed_temp_api);
+        EditTextList.add(ed_hum_api);
+        EditTextList.add(ed_light_api);
+        EditTextList.add(ed_human_api);
     }
 
     private void findViewByIDme() {
@@ -140,56 +169,53 @@ public class SettingsActivity
     }
 
     void login() {
-        new Thread(new Runnable() {
+        if (!shared.getBoolean("token_state", false)) {
+            (new Thread() {
+                public void run() {
+                    try {
 
-            @Override
-            public void run() {
-                try {
+                        // 构建请求体，包含账户和密码信息
+                        RequestBody requestBody = new FormBody.Builder()
+                                .add("Account", shared.getString("ed_cloud_user", ""))
+                                .add("Password", shared.getString("ed_cloud_pwd", ""))
+                                .build();
 
-                    // 创建OkHttpClient实例，用于发送HTTP请求
-                    OkHttpClient client = new OkHttpClient();
+                        // 构建请求对象，指定URL和请求方法，并携带请求体
+                        Request request = new Request.Builder()
+                                .url("http://api.nlecloud.com/Users/Login")
+                                .post(requestBody)
+                                .build();
 
-                    // 构建请求体，包含账户和密码信息
-                    RequestBody requestBody = new FormBody.Builder()
-                            .add("Account", "19033822991")
-                            .add("Password", "yuhao1125")
-                            .build();
+                        // 使用OkHttpClient实例执行请求，并获取响应对象
+                        Response response = client.newCall(request).execute();
 
-                    // 构建请求对象，指定URL和请求方法，并携带请求体
-                    Request request = new Request.Builder()
-                            .url("http://api.nlecloud.com/Users/Login")
-                            .post(requestBody)
-                            .build();
+                        // 从响应对象中获取响应体
+                        ResponseBody responseBody = response.body();
 
-                    // 使用OkHttpClient实例执行请求，并获取响应对象
-                    Response response = client.newCall(request).execute();
+                        // 判断响应体是否为空，如果为空则抛出异常
+                        assert responseBody != null;
 
-                    // 从响应对象中获取响应体
-                    ResponseBody responseBody = response.body();
+                        // 将响应体内容转换为字符串
+                        String str = responseBody.string();
+                        String token = praseToken(str);
+                        editor.putString("token", token);
+                        if (token != null) {
+                            editor.putBoolean("token_state", true);
+                        } else {
+                            editor.putBoolean("token_state", false);
+                        }
+                        editor.commit();
+                        Log.d(TAG, "return token: " + token);
+                    } catch (IOException e) {
+                        // 如果发生IO异常，将其转换为运行时异常并抛出
+                        throw new RuntimeException(e);
 
-                    // 判断响应体是否为空，如果为空则抛出异常
-                    assert responseBody != null;
-
-                    // 将响应体内容转换为字符串
-                    String str = responseBody.string();
-                    String token = praseToken(str);
-                    editor.putString("token",  token);
-                    if(token != null){
-                        editor.putBoolean("token_state",true);
-                    }else {
-                        editor.putBoolean("token_state",false);
                     }
-                    editor.commit();
-                    Log.d(TAG, "return token: " + token);
-                } catch (IOException e) {
-                    // 如果发生IO异常，将其转换为运行时异常并抛出
-                    throw new RuntimeException(e);
 
                 }
+            }).start(); // 启动线程，开始执行登录操作
 
-            }
-        }).start(); // 启动线程，开始执行登录操作
-
+        }
     }
 
     /**
